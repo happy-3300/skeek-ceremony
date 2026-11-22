@@ -6,6 +6,11 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Skeek Al Doha">
+<meta name="theme-color" content="#faf3e9">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="app-icon.png">
+<link rel="icon" href="app-icon.png">
 <title>Skeek Al Doha</title>
 <style>
   /* Artboard from the PDF: 2064 x 2752 pt. All positions below are in % of it. */
@@ -294,6 +299,11 @@
   // block pinch / double-tap zoom & context menu on iPad Safari
   ['gesturestart', 'gesturechange', 'dblclick', 'contextmenu'].forEach(t =>
     document.addEventListener(t, e => e.preventDefault(), { passive: false }));
+
+  // Offline: a service worker keeps a copy of this page on the device, so a reload without internet still works.
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
 </script>
 </body>
 </html>

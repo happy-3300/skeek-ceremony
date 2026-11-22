@@ -1,3 +1,5 @@
+# Source page: src.html (edit this). Run `node build.js` to produce index.html (live site), skeek-ceremony.html (zip) and sw.js (offline saving).
+
 # Regenerating assets/lines-lit.png
 
 The glowing building lines are traced from the original 3x background so they match it pixel for pixel.

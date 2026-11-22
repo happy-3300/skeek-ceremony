@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Skeek Al Doha">
+<meta name="theme-color" content="#faf3e9">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="app-icon.png">
+<link rel="icon" href="app-icon.png">
+<title>Skeek Al Doha</title>
+<link rel="preload" as="image" href="assets/ribbons.png">
+<link rel="preload" as="image" href="assets/lines.png">
+<link rel="preload" as="image" href="assets/button-on.png">
+<link rel="preload" as="image" href="assets/lines-lit.png">
+<style>
+  /* Artboard from the PDF: 2064 x 2752 pt. All positions below are in % of it. */
+  html, body {
+    margin: 0; height: 100%; overflow: hidden;
+    background: #faf3e9;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none;
+    overscroll-behavior: none;
+  }
+  body { position: fixed; inset: 0; }
+
+  /* Stage keeps the 3:4 artboard ratio and covers the screen (centered). */
+  .stage {
+    position: absolute; left: 50%; top: 50%;
+    width:  max(100vw, calc(100vh * 2064 / 2752));
+    height: max(100vh, calc(100vw * 2752 / 2064));
+    transform: translate(-50%, -50%);
+    background: #faf3e9 url("assets/ribbons.png") center / 100% 100% no-repeat;
+  }
+  .stage img {
+    position: absolute; display: block;
+    pointer-events: none;
+    -webkit-user-drag: none;
+  }
+
+  /* left/top/width/height = pt / 2064 or pt / 2752 */
+  .logo     { left: 37.112%; top: 18.532%; width: 25.775%; height: 21.112%; }
+  .text-touch   { left: 16.667%; top: 76.708%; width: 66.604%; height:  8.783%; }
+  .text-journey { left: 16.279%; top: 21.948%; width: 67.621%; height: 14.244%; } /* centred where the logo was */
+  .lines-base   { left: 0; top: 0; width: 100%; height: 100%; }
+
+  .button {
+    position: absolute;
+    left: 34.351%; top: 46.684%; width: 31.023%; height: 23.412%;
+    cursor: pointer;
+  }
+  /* off image fills the button box; on image is larger (glow) and offset as in the PDF */
+  .button .off { left: 0; top: 0; width: 100%; height: 100%; }
+  .button .on  { left: -7.895%; top: -7.858%; width: 122.077%; height: 114.247%; opacity: 0; }
+
+  /* ---- transitions ---- */
+  .button, .text-touch { transition: opacity 2.2s ease-in-out; }
+  .button .on  { transition: opacity .7s ease-out; }
+  .text-journey { opacity: 0; transition: opacity 2.4s ease-in-out; }
+
+  .stage.lit .button .on { opacity: 1; }
+  .stage.fade .button,
+  .stage.fade .text-touch { opacity: 0; }
+  .stage.journey .text-journey { opacity: 1; }
+
+  .button:active .off { transform: scale(.985); }
+  .stage.lit .button { pointer-events: none; }
+
+  /* ---- building lines light up, bottom to top ----
+     The wrapper slides up while the image inside slides down by the same amount,
+     so the image stays put and is revealed from the bottom. Transform-only = GPU smooth.
+     Wrapper is 115% tall; its top 15% is a soft feathered edge. */
+  .lights {
+    position: absolute; left: 0; top: -15%; width: 100%; height: 115%;
+    overflow: hidden; pointer-events: none;
+    transform: translate3d(0, 100%, 0);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 13%);
+            mask-image: linear-gradient(to bottom, transparent 0%, #000 13%);
+  }
+  .lights img {
+    left: 0; top: 13.0435%; width: 100%; height: 86.9565%; /* = the stage */
+    transform: translate3d(0, -115%, 0);
+  }
+  .lights, .lights img { transition: transform 2.8s cubic-bezier(.42, 0, 1, 1); will-change: transform; }
+  .stage.glow .lights, .stage.glow .lights img { transform: translate3d(0, 0, 0); }
+
+  /* after the sweep: building lines (plain + lit) and the logo fade away, leaving the clean background */
+  .lights-inner { position: absolute; inset: 0; }
+  .lines-base, .lights-inner, .logo { transition: opacity 2.2s ease-in-out; }
+  .stage.clear .lines-base, .stage.clear .lights-inner, .stage.clear .logo { opacity: 0; }
+
+  /* ---- destinations: five landmarks linked by the designer's line bundles ---- */
+  .route-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+  .route-svg line { fill: none; stroke-dasharray: 1 1; stroke-dashoffset: 1; }
+
+  .icon { position: absolute; pointer-events: none; }
+  .icon img { left: 0; top: 0; width: 100%; height: 100%; }
+  /* shadows fade in, in place, as the building settles (never moved, so they always line up with it) */
+  .icon .sh  { opacity: 0; transition: opacity 1.8s ease-in-out calc(var(--d, 0s) + .8s); }
+  .icon .sun { opacity: 0; transform: translate3d(0, 12%, 0) scale(.9); transform-origin: 50% 70%;
+               transition: opacity 1s ease-out var(--d, 0s), transform 1.8s cubic-bezier(.2, .7, .2, 1) var(--d, 0s); }
+  .icon .bd  { opacity: 0; transform: translate3d(0, 4%, 0);
+               transition: opacity 1.1s ease-out calc(var(--d, 0s) + .2s), transform 1.5s cubic-bezier(.2, .7, .2, 1) calc(var(--d, 0s) + .2s); }
+  .stage.route .icon img { opacity: 1; transform: none; }
+  /* names above each landmark, in the designer's label artboards (313.98 x 206.6) */
+  .label { position: absolute; pointer-events: none; opacity: 0; transform: translate3d(0, 10%, 0);
+           transition: opacity 1.2s ease-out calc(var(--d, 0s) + .7s), transform 1.4s cubic-bezier(.2, .7, .2, 1) calc(var(--d, 0s) + .7s); }
+  .stage.route .label { opacity: 1; transform: none; }
+
+  .stage.instant, .stage.instant * { transition: none !important; animation: none !important; }
+
+  /* hidden reset: double-tap top-left corner */
+  .reset { position: absolute; left: 0; top: 0; width: 12%; height: 9%; z-index: 5; }
+</style>
+</head>
+<body>
+  <div class="stage" id="stage">
+    <img class="lines-base" src="assets/lines.png" alt="">
+    <div class="lights-inner"><div class="lights"><img src="assets/lines-lit.png" alt=""></div></div>
+    <svg class="route-svg" viewBox="0 0 2064 2752" preserveAspectRatio="none" aria-hidden="true">
+      <g id="route"></g>
+    </svg>
+    <div class="icon"><img class="sh" src="assets/icons/fereej-al-asmakh-shadow.png" alt=""><img class="sun" src="assets/icons/fereej-al-asmakh-sun.png" alt=""><img class="bd" src="assets/icons/fereej-al-asmakh-building.png" alt="Fereej Al Asmakh"></div>
+    <div class="icon"><img class="sh" src="assets/icons/bayt-al-zaman-shadow.png" alt=""><img class="sun" src="assets/icons/bayt-al-zaman-sun.png" alt=""><img class="bd" src="assets/icons/bayt-al-zaman-building.png" alt="Bayt Al Zaman"></div>
+    <div class="icon"><img class="sh" src="assets/icons/dar-al-kutub-shadow.png" alt=""><img class="sun" src="assets/icons/dar-al-kutub-sun.png" alt=""><img class="bd" src="assets/icons/dar-al-kutub-building.png" alt="Dar Al Kutub Al Qatariya"></div>
+    <div class="icon"><img class="sh" src="assets/icons/founder-house-shadow.png" alt=""><img class="sun" src="assets/icons/founder-house-sun.png" alt=""><img class="bd" src="assets/icons/founder-house-building.png" alt="Founder's House"></div>
+    <div class="icon"><img class="sh" src="assets/icons/doha-stadium-shadow.png" alt=""><img class="sun" src="assets/icons/doha-stadium-sun.png" alt=""><img class="bd" src="assets/icons/doha-stadium-building.png" alt="Doha Stadium"></div>
+    <img class="label" src="assets/labels/fereej-al-asmakh.png" alt="Fereej Al Asmakh">
+    <img class="label" src="assets/labels/bayt-al-zaman.png" alt="Bayt Al Zaman">
+    <img class="label" src="assets/labels/dar-al-kutub.png" alt="Dar Al Kutub Al Qatariya">
+    <img class="label" src="assets/labels/founder-house.png" alt="Founder's House">
+    <img class="label" src="assets/labels/doha-stadium.png" alt="Doha Stadium">
+    <img class="logo" src="assets/logo.png" alt="Skeek Al Doha">
+    <div class="button" id="btn" role="button" aria-label="Turn on">
+      <img class="off" src="assets/button-off.png" alt="">
+      <img class="on"  src="assets/button-on.png"  alt="">
+    </div>
+    <img class="text-touch" src="assets/text-touch.png" alt="Your touch lights up Skeek Al Doha">
+    <img class="text-journey" src="assets/text-journey.png" alt="The journey starts here">
+    <div class="reset" id="reset"></div>
+  </div>
+
+<script>
+  // Timing (ms)
+  const GLOW_AT    = 0;    // building lines start lighting up (on tap)
+  const SWEEP      = 2800; // bottom-to-top sweep (matches CSS)
+
+  const CLEAR_AT   = SWEEP + 400;  // button, first text, lines + logo all fade out together after the sweep
+  const CLEAR_FADE = 2200;         // (matches CSS)
+  const JOURNEY_AT = CLEAR_AT + CLEAR_FADE - 600; // journey text appears where the logo was
+  const ROUTE_AT   = JOURNEY_AT + 1400;           // route + landmarks
+  const ROUTE_DRAW = 4200; // line drawing time, left to right
+
+  // Landmarks, in route order (matches the .icon elements). Measured in the designer's icon artboard units:
+  // sun = circle centre + radius, x0/x1 = visible left/right edge (building or sun), bottom = building ground line.
+  const LANDMARKS = [
+    { name: 'fereej',   sun: [254.43, 222.93, 125.80], x0: 100.8, x1: 483.3, bottom: 387.5 }, // orange
+    { name: 'bayt',     sun: [286.93, 209.38, 134.58], x0: 118.3, x1: 474.2, bottom: 372.5 }, // beige
+    { name: 'dar',      sun: [310.73, 224.10, 131.43], x0: 113.3, x1: 504.2, bottom: 365.0 }, // blue
+    { name: 'founder',  sun: [311.76, 202.56, 119.98], x0: 141.7, x1: 486.7, bottom: 341.7 }, // purple
+    { name: 'stadium',  sun: [298.74, 246.92, 148.78], x0:  74.2, x1: 515.8, bottom: 367.5 }, // red (half disc)
+  ];
+  // Layout (artboard pt): every sun is drawn at the same radius; 1st/3rd/5th on the top row, 2nd/4th below.
+  const SUN_R  = 140;   // sun radius
+  const MARGIN = 150;   // gap between the outer landmarks and the screen edges (same both sides)
+  const ROW_Y  = [1490, 2310]; // sun-centre height of the top and bottom rows (gap leaves room for the names)
+
+  const stage = document.getElementById('stage');
+  const btn = document.getElementById('btn');
+
+  // ---- lay out icons + route ----
+  (function layoutRoute() {
+    const AW = 2064, AH = 2752;
+    // layer PNGs cover icon units x -170..750, y -30..570 (padding so shadows fade out naturally)
+    const icons = [...document.querySelectorAll('.icon')];
+    const L = LANDMARKS.map(m => { const k = SUN_R / m.sun[2]; return { ...m, k, w: (m.x1 - m.x0) * k, cu: (m.x0 + m.x1) / 2 }; });
+    // top row: equal gaps between visible edges, equal margins to the screen edges
+    const top = [0, 2, 4], gap = (AW - 2 * MARGIN - top.reduce((a, i) => a + L[i].w, 0)) / (top.length - 1);
+    let x = MARGIN; top.forEach(i => { L[i].cx = x + L[i].w / 2; x += L[i].w + gap; });
+    // bottom row sits centred between its neighbours above
+    [1, 3].forEach(i => { L[i].cx = (L[i - 1].cx + L[i + 1].cx) / 2; });
+    L.forEach((m, i) => { m.cy = ROW_Y[i % 2]; });
+    icons.forEach((el, i) => {
+      const m = L[i], ox = m.cx - m.cu * m.k, oy = m.cy - m.sun[1] * m.k; // artboard position of icon unit (0,0)
+      Object.assign(el.style, {
+        left:   ((ox - 170 * m.k) / AW * 100) + '%',
+        top:    ((oy - 30 * m.k) / AH * 100) + '%',
+        width:  (920 * m.k / AW * 100) + '%',
+        height: (600 * m.k / AH * 100) + '%',
+      });
+      // shadow grows out from the building's base
+      el.style.setProperty('--ox', ((m.cu + 170) / 920 * 100) + '%');
+      el.style.setProperty('--oy', ((m.bottom + 30) / 600 * 100) + '%');
+    });
+    // The designer's line bundles (icon artboard 6, 1152x666 units): six thin lines fanning from one
+    // landmark to the next, in the colour of the landmark they leave. Each end is tucked under a sun/building.
+    // from/to = [landmark index, x, y]; 'to' ends are the six fan points.
+    const SRC_SUN = [[164.48, 180.14, 54.03], [400.91, 528.12, 56.39], [591.43, 188.68, 56.01], [778.35, 517.63, 52.78], [957.92, 199.33, 57.85]];
+    const BUNDLES = [
+      { color: '#fd9100', w: .94,  a: [0, 176.76, 170],    b: 1, fan: [[366.82,531.52],[371.03,529.29],[363.57,534.59],[359.43,537.17],[355.91,540.06],[352.27,542.65]], fromApex: true },
+      { color: '#d39469', w: 1.06, a: [2, 605.19, 200.02], b: 1, fan: [[445.55,533.84],[450.56,534.51],[440.4,532.02],[434.88,530.17],[429.26,527.98],[423.5,525.95]], fromApex: false },
+      { color: '#88bbc0', w: 1,    a: [2, 563.22, 208.48], b: 3, fan: [[743.89,506.36],[748.89,504.09],[738.04,507.78],[731.83,509.4],[725.32,510.8],[718.79,512.4]], fromApex: true },
+      { color: '#7d0d4a', w: 1.28, a: [4, 963.41, 172.3],  b: 3, fan: [[822.22,521.05],[825.48,526.98],[819.22,516.26],[815.89,511.2],[812.79,505.82],[809.41,500.46]], fromApex: false },
+    ];
+    // names: rule (the small line between Arabic and English) centre in artboard 6 and in each label artboard
+    const LABEL_RULE = [[164.49, 91.65, 156.99, 102.27], [395.07, 370.05, 156.99, 102.21], [591.43, 80.44, 156.99, 91.06], [770.48, 365.97, 156.45, 98.12], [957.95, 91.59, 156.99, 102.21]];
+    const LABEL_BASELINE = [119.99, 119.93, 130.55, 131.68, 119.93]; // last text line baseline in each label artboard
+    const LS = SUN_R / (SRC_SUN.reduce((t, s) => t + s[2], 0) / 5); // one text size for every name
+    document.querySelectorAll('.label').forEach((el, i) => {
+      const [rx, ry, lx, ly] = LABEL_RULE[i], s = SRC_SUN[i], f = SUN_R / s[2];
+      const sx = L[i].cx + (L[i].sun[0] - L[i].cu) * L[i].k, sy = L[i].cy;
+      const x = sx + (rx - s[0]) * f - lx * LS;
+      // top row: as in the designer's layout. Bottom row: same gap above the sun as the top row
+      // (Fereej: English baseline sits 16.74 artboard units above its sun).
+      const y = i % 2 ? (sy - SUN_R) - 16.74 * SUN_R / SRC_SUN[0][2] - LABEL_BASELINE[i] * LS
+                      : sy + (ry - s[1]) * f - ly * LS;
+      Object.assign(el.style, { left: x / AW * 100 + '%', top: y / AH * 100 + '%', width: 313.98 * LS / AW * 100 + '%', height: 206.6 * LS / AH * 100 + '%' });
+    });
+    const sunC = L.map(m => ({ x: m.cx + (m.sun[0] - m.cu) * m.k, y: m.cy }));
+    // a point near source sun i -> same spot relative to our sun i
+    const mapPt = (i, x, y) => { const s = SRC_SUN[i], f = SUN_R / s[2]; return { x: sunC[i].x + (x - s[0]) * f, y: sunC[i].y + (y - s[1]) * f }; };
+    const NS = 'http://www.w3.org/2000/svg', g = document.getElementById('route');
+    const segs = BUNDLES.map(B => {
+      const f = SUN_R / ((SRC_SUN[B.a[0]][2] + SRC_SUN[B.b][2]) / 2);
+      const A = { x: B.a[1], y: B.a[2] };
+      const M = { x: B.fan.reduce((t, p) => t + p[0], 0) / 6, y: B.fan.reduce((t, p) => t + p[1], 0) / 6 };
+      // fan shape in the bundle's own frame (along / across), so it keeps its look when re-aimed
+      const u0 = Math.atan2(M.y - A.y, M.x - A.x);
+      const A2 = mapPt(B.a[0], A.x, A.y), M2 = mapPt(B.b, M.x, M.y);
+      const rot = Math.atan2(M2.y - A2.y, M2.x - A2.x) - u0, c = Math.cos(rot), sn = Math.sin(rot);
+      const ends = B.fan.map(([x, y]) => { const dx = (x - M.x) * f, dy = (y - M.y) * f; return { x: M2.x + dx * c - dy * sn, y: M2.y + dx * sn + dy * c }; });
+      const lines = ends.map(E => {
+        const [p, q] = B.fromApex ? [A2, E] : [E, A2]; // always draw in route order
+        const l = document.createElementNS(NS, 'line');
+        l.setAttribute('x1', p.x); l.setAttribute('y1', p.y); l.setAttribute('x2', q.x); l.setAttribute('y2', q.y);
+        l.setAttribute('pathLength', 1); l.setAttribute('stroke', B.color); l.setAttribute('stroke-width', B.w * f);
+        g.appendChild(l); return l;
+      });
+      return { lines, len: Math.hypot(M2.x - A2.x, M2.y - A2.y) };
+    });
+    // timeline: landmark 1 rises, then each bundle draws on to the next landmark, which rises as the line arrives
+    const total = segs.reduce((t, s) => t + s.len, 0), LEAD = 500;
+    let t = LEAD;
+    icons[0].style.setProperty('--d', '0s');
+    segs.forEach((s, i) => {
+      s.delay = t; s.dur = s.len / total * ROUTE_DRAW; t += s.dur;
+      icons[i + 1].style.setProperty('--d', Math.max(0, t - s.dur * .35) / 1000 + 's');
+    });
+    const labelEls = document.querySelectorAll('.label');
+    icons.forEach((el, i) => labelEls[i].style.setProperty('--d', el.style.getPropertyValue('--d')));
+    window.__route = { segs };
+  })();
+
+  function drawRoute(on) {
+    window.__route.segs.forEach(s => s.lines.forEach((l, j) => {
+      l.style.transition = on ? `stroke-dashoffset ${s.dur}ms cubic-bezier(.45,.05,.55,.95) ${s.delay + j * 40}ms` : 'none';
+      l.style.strokeDashoffset = on ? 0 : 1;
+    }));
+  }
+  let timers = [];
+  let started = false;
+
+  function start(e) {
+    if (e) e.preventDefault();
+    if (started) return;
+    started = true;
+    stage.classList.add('lit');
+    timers.push(setTimeout(() => stage.classList.add('glow'), GLOW_AT));
+    timers.push(setTimeout(() => stage.classList.add('clear'), CLEAR_AT));
+    timers.push(setTimeout(() => stage.classList.add('fade'), CLEAR_AT));
+    timers.push(setTimeout(() => stage.classList.add('journey'), JOURNEY_AT));
+    timers.push(setTimeout(() => { stage.classList.add('route'); drawRoute(true); }, ROUTE_AT));
+  }
+
+  function reset() {
+    timers.forEach(clearTimeout); timers = [];
+    stage.classList.add('instant');
+    stage.classList.remove('lit', 'fade', 'journey', 'glow', 'clear', 'route');
+    drawRoute(false);
+    void stage.offsetWidth; // apply instantly, then re-enable transitions
+    stage.classList.remove('instant');
+    started = false;
+  }
+
+  // decode every image up front so the first frame of each animation is smooth
+  document.querySelectorAll('img').forEach(img => img.decode && img.decode().catch(() => {}));
+
+  btn.addEventListener('pointerdown', start);
+
+  let lastTap = 0;
+  document.getElementById('reset').addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    const now = Date.now();
+    if (now - lastTap < 400) reset();
+    lastTap = now;
+  });
+
+  // block pinch / double-tap zoom & context menu on iPad Safari
+  ['gesturestart', 'gesturechange', 'dblclick', 'contextmenu'].forEach(t =>
+    document.addEventListener(t, e => e.preventDefault(), { passive: false }));
+
+  // Offline: a service worker keeps a copy of this page on the device, so a reload without internet still works.
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+</script>
+</body>
+</html>
