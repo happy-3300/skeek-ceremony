@@ -164,7 +164,6 @@
   const SUN_R  = 140;   // sun radius
   const MARGIN = 150;   // gap between the outer landmarks and the screen edges (same both sides)
   const ROW_Y  = [1490, 2310]; // sun-centre height of the top and bottom rows (gap leaves room for the names)
-  const LIFT   = 150;     // bottom-row names sit this much higher than in the designer's layout (room between the line bundles)
 
   const stage = document.getElementById('stage');
   const btn = document.getElementById('btn');
@@ -205,11 +204,16 @@
     ];
     // names: rule (the small line between Arabic and English) centre in artboard 6 and in each label artboard
     const LABEL_RULE = [[164.49, 91.65, 156.99, 102.27], [395.07, 370.05, 156.99, 102.21], [591.43, 80.44, 156.99, 91.06], [770.48, 365.97, 156.45, 98.12], [957.95, 91.59, 156.99, 102.21]];
+    const LABEL_BASELINE = [119.99, 119.93, 130.55, 131.68, 119.93]; // last text line baseline in each label artboard
     const LS = SUN_R / (SRC_SUN.reduce((t, s) => t + s[2], 0) / 5); // one text size for every name
     document.querySelectorAll('.label').forEach((el, i) => {
       const [rx, ry, lx, ly] = LABEL_RULE[i], s = SRC_SUN[i], f = SUN_R / s[2];
       const sx = L[i].cx + (L[i].sun[0] - L[i].cu) * L[i].k, sy = L[i].cy;
-      const x = sx + (rx - s[0]) * f - lx * LS, y = sy + (ry - s[1]) * f - ly * LS - (i % 2 ? LIFT : 0);
+      const x = sx + (rx - s[0]) * f - lx * LS;
+      // top row: as in the designer's layout. Bottom row: same gap above the sun as the top row
+      // (Fereej: English baseline sits 16.74 artboard units above its sun).
+      const y = i % 2 ? (sy - SUN_R) - 16.74 * SUN_R / SRC_SUN[0][2] - LABEL_BASELINE[i] * LS
+                      : sy + (ry - s[1]) * f - ly * LS;
       Object.assign(el.style, { left: x / AW * 100 + '%', top: y / AH * 100 + '%', width: 313.98 * LS / AW * 100 + '%', height: 206.6 * LS / AH * 100 + '%' });
     });
     const sunC = L.map(m => ({ x: m.cx + (m.sun[0] - m.cu) * m.k, y: m.cy }));

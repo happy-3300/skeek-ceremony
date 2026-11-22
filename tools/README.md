@@ -31,7 +31,7 @@ assets-3x/fonts (not committed) and are only used to render the PNGs; the page i
 Only Brando Arabic *Text* (regular) is available, so the Arabic is emboldened with a 0.32-unit outline to match SemiBold.
 
     export FONTCONFIG_FILE=$PWD/assets-3x/fonts/fonts.conf
-    node tools/labels-page.js assets-3x/labels-svg /tmp/labels.html 3 0.32
+    node tools/labels-page.js assets-3x/labels-svg /tmp/labels.html 3 0.32 bayt-al-zaman,founder-house
     node tools/chrome-run.js file:///tmp/labels.html /tmp/lab
     for f in /tmp/lab/*.png; do pngquant --quality=88-100 --speed 1 --strip --force --output assets/labels/$(basename "$f") "$f"; done
     node build.js
