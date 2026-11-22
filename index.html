@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Skeek Al Doha</title>
+<link rel="preload" as="image" href="assets/background.png">
+<link rel="preload" as="image" href="assets/button-on.png">
+<style>
+  /* Artboard from the PDF: 2064 x 2752 pt. All positions below are in % of it. */
+  html, body {
+    margin: 0; height: 100%; overflow: hidden;
+    background: #faf3e9;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none;
+    overscroll-behavior: none;
+  }
+  body { position: fixed; inset: 0; }
+
+  /* Stage keeps the 3:4 artboard ratio and covers the screen (centered). */
+  .stage {
+    position: absolute; left: 50%; top: 50%;
+    width:  max(100vw, calc(100vh * 2064 / 2752));
+    height: max(100vh, calc(100vw * 2752 / 2064));
+    transform: translate(-50%, -50%);
+    background: #faf3e9 url("assets/background.png") center / 100% 100% no-repeat;
+  }
+  .stage img {
+    position: absolute; display: block;
+    pointer-events: none;
+    -webkit-user-drag: none;
+  }
+
+  /* left/top/width/height = pt / 2064 or pt / 2752 */
+  .logo     { left: 37.112%; top: 18.532%; width: 25.775%; height: 21.112%; }
+  .text-touch   { left: 16.667%; top: 76.708%; width: 66.604%; height:  8.783%; }
+  .text-journey { left: 16.279%; top: 54.615%; width: 67.621%; height: 14.244%; }
+
+  .button {
+    position: absolute;
+    left: 34.351%; top: 46.684%; width: 31.023%; height: 23.412%;
+    cursor: pointer;
+  }
+  /* off image fills the button box; on image is larger (glow) and offset as in the PDF */
+  .button .off { left: 0; top: 0; width: 100%; height: 100%; }
+  .button .on  { left: -7.895%; top: -7.858%; width: 122.077%; height: 114.247%; opacity: 0; }
+
+  /* ---- transitions ---- */
+  .button, .text-touch { transition: opacity 2.4s ease-in-out; }
+  .button .on  { transition: opacity .7s ease-out; }
+  .text-journey { opacity: 0; transition: opacity 2.4s ease-in-out; }
+
+  .stage.lit .button .on { opacity: 1; }
+  .stage.fade .button,
+  .stage.fade .text-touch { opacity: 0; }
+  .stage.journey .text-journey { opacity: 1; }
+
+  .button:active .off { transform: scale(.985); }
+  .stage.lit .button { pointer-events: none; }
+
+  /* hidden reset: double-tap top-left corner */
+  .reset { position: absolute; left: 0; top: 0; width: 12%; height: 9%; z-index: 5; }
+</style>
+</head>
+<body>
+  <div class="stage" id="stage">
+    <img class="logo" src="assets/logo.png" alt="Skeek Al Doha">
+    <div class="button" id="btn" role="button" aria-label="Turn on">
+      <img class="off" src="assets/button-off.png" alt="">
+      <img class="on"  src="assets/button-on.png"  alt="">
+    </div>
+    <img class="text-touch" src="assets/text-touch.png" alt="Your touch lights up Skeek Al Doha">
+    <img class="text-journey" src="assets/text-journey.png" alt="The journey starts here">
+    <div class="reset" id="reset"></div>
+  </div>
+
+<script>
+  // Timing (ms)
+  const HOLD_LIT   = 1600; // button stays lit before fading
+  const FADE_OUT   = 2400; // button + text fade (matches CSS)
+  const GAP        = 200;  // pause before the new text
+
+  const stage = document.getElementById('stage');
+  const btn = document.getElementById('btn');
+  let timers = [];
+  let started = false;
+
+  function start(e) {
+    if (e) e.preventDefault();
+    if (started) return;
+    started = true;
+    stage.classList.add('lit');
+    timers.push(setTimeout(() => stage.classList.add('fade'), HOLD_LIT));
+    timers.push(setTimeout(() => stage.classList.add('journey'), HOLD_LIT + FADE_OUT + GAP));
+  }
+
+  function reset() {
+    timers.forEach(clearTimeout); timers = [];
+    stage.classList.remove('lit', 'fade', 'journey');
+    started = false;
+  }
+
+  btn.addEventListener('pointerdown', start);
+
+  let lastTap = 0;
+  document.getElementById('reset').addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    const now = Date.now();
+    if (now - lastTap < 400) reset();
+    lastTap = now;
+  });
+
+  // block pinch / double-tap zoom & context menu on iPad Safari
+  ['gesturestart', 'gesturechange', 'dblclick', 'contextmenu'].forEach(t =>
+    document.addEventListener(t, e => e.preventDefault(), { passive: false }));
+</script>
+</body>
+</html>
