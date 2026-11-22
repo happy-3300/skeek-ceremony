@@ -7,6 +7,7 @@ const VB=[-170,-30,920,600],K=1.2;
 async function render(svgEl){const s=new XMLSerializer().serializeToString(svgEl);const im=new Image();im.src="data:image/svg+xml;base64,"+btoa(unescape(encodeURIComponent(s)));await im.decode();
  const c=document.createElement("canvas");c.width=VB[2]*K;c.height=VB[3]*K;c.getContext("2d").drawImage(im,0,0,c.width,c.height);return c}
 (async()=>{const res={},info={};
+let bldCanvas=null;
 for(const {n,svg} of items){
  const variant=async(kind)=>{const doc=new DOMParser().parseFromString(svg,"image/svg+xml");const root=doc.documentElement;
   root.setAttribute("viewBox",VB.join(" "));root.setAttribute("width",VB[2]*K);root.setAttribute("height",VB[3]*K);
@@ -16,14 +17,16 @@ for(const {n,svg} of items){
   if(kind!="shadow")sh.forEach(e=>e.remove());
   if(kind!="building")bd.forEach(e=>e.remove());
   if(kind=="shadow"){const r=doc.createElementNS("http://www.w3.org/2000/svg","rect");r.setAttribute("x",VB[0]-10);r.setAttribute("y",VB[1]-10);r.setAttribute("width",VB[2]+20);r.setAttribute("height",VB[3]+20);r.setAttribute("fill","#faf3e9");L.insertBefore(r,L.firstChild)}
-  const c=await render(root);
+  const c=await render(root);if(kind=="building")bldCanvas=c;
   if(kind=="shadow"){const x=c.getContext("2d"),d=x.getImageData(0,0,c.width,c.height),p=d.data;let edge=0;
+   // drop shadow pixels hidden under the building (some shadow layers contain a dark copy of the building)
+   const bA=bldCanvas.getContext("2d").getImageData(0,0,c.width,c.height).data;
    // shadow was multiplied onto the cream page colour; turn it into a layer that only darkens cream the same way
    const CR=[250,243,233];const W0=c.width;
    for(let i=0;i<p.length;i+=4){let a=0;for(let k=0;k<3;k++)a=Math.max(a,(CR[k]-p[i+k])/CR[k]);
     // soft elliptical fade towards the layer edges (centre ~ icon middle, units of the icon artboard)
     const px=(i/4)%W0,py=((i/4)/W0)|0;const u=VB[0]+px/K,v=VB[1]+py/K;const e=Math.hypot((u-286)/430,(v-300)/270);
-    const fall=e<0.72?1:e>1?0:(1-(e-0.72)/0.28)**2;a*=fall;
+    const fall=e<0.72?1:e>1?0:(1-(e-0.72)/0.28)**2;a*=fall;a*=1-bA[i+3]/255;
     if(a<0.004){p[i+3]=0;continue}const a0=a/fall;for(let k=0;k<3;k++)p[i+k]=Math.max(0,Math.min(255,CR[k]-(CR[k]-p[i+k])/a0));p[i+3]=Math.round(a*255)}
    x.putImageData(d,0,0);
    // max alpha along the canvas border (should be ~0 if shadows fade out)

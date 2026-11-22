@@ -97,8 +97,8 @@
 
   .icon { position: absolute; pointer-events: none; }
   .icon img { left: 0; top: 0; width: 100%; height: 100%; }
-  .icon .sh  { opacity: 0; transform: scale(.35, .6); transform-origin: var(--ox, 50%) var(--oy, 67%); /* building base */
-               transition: opacity 1.4s ease-out calc(var(--d, 0s) + .55s), transform 1.9s cubic-bezier(.2, .7, .2, 1) calc(var(--d, 0s) + .55s); }
+  /* shadows fade in, in place, as the building settles (never moved, so they always line up with it) */
+  .icon .sh  { opacity: 0; transition: opacity 1.8s ease-in-out calc(var(--d, 0s) + .8s); }
   .icon .sun { opacity: 0; transform: translate3d(0, 12%, 0) scale(.9); transform-origin: 50% 70%;
                transition: opacity 1s ease-out var(--d, 0s), transform 1.8s cubic-bezier(.2, .7, .2, 1) var(--d, 0s); }
   .icon .bd  { opacity: 0; transform: translate3d(0, 4%, 0);
