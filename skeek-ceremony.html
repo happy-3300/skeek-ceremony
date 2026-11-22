@@ -50,7 +50,7 @@
   .button .on  { left: -7.895%; top: -7.858%; width: 122.077%; height: 114.247%; opacity: 0; }
 
   /* ---- transitions ---- */
-  .button, .text-touch { transition: opacity 2.4s ease-in-out; }
+  .button, .text-touch { transition: opacity 2.2s ease-in-out; }
   .button .on  { transition: opacity .7s ease-out; }
   .text-journey { opacity: 0; transition: opacity 2.4s ease-in-out; }
 
@@ -77,12 +77,12 @@
     left: 0; top: 13.0435%; width: 100%; height: 86.9565%; /* = the stage */
     transform: translate3d(0, -115%, 0);
   }
-  .lights, .lights img { transition: transform 3.6s cubic-bezier(.42, 0, 1, 1); will-change: transform; }
+  .lights, .lights img { transition: transform 2.8s cubic-bezier(.42, 0, 1, 1); will-change: transform; }
   .stage.glow .lights, .stage.glow .lights img { transform: translate3d(0, 0, 0); }
 
   /* after the sweep: building lines (plain + lit) and the logo fade away, leaving the clean background */
   .lights-inner { position: absolute; inset: 0; }
-  .lines-base, .lights-inner, .logo { transition: opacity 2s ease-in-out; }
+  .lines-base, .lights-inner, .logo { transition: opacity 2.2s ease-in-out; }
   .stage.clear .lines-base, .stage.clear .lights-inner, .stage.clear .logo { opacity: 0; }
 
   /* ---- destinations: five landmarks linked by a glowing route ---- */
@@ -132,13 +132,11 @@
 
 <script>
   // Timing (ms)
-  const HOLD_LIT   = 1600; // button stays lit before fading
-  const FADE_OUT   = 2400; // button + text fade (matches CSS)
   const GLOW_AT    = 0;    // building lines start lighting up (on tap)
-  const SWEEP      = 3600; // bottom-to-top sweep (matches CSS)
+  const SWEEP      = 2800; // bottom-to-top sweep (matches CSS)
 
-  const CLEAR_AT   = SWEEP + 600;  // lines + logo fade out after the sweep
-  const CLEAR_FADE = 2000;         // (matches CSS)
+  const CLEAR_AT   = SWEEP + 400;  // button, first text, lines + logo all fade out together after the sweep
+  const CLEAR_FADE = 2200;         // (matches CSS)
   const JOURNEY_AT = CLEAR_AT + CLEAR_FADE - 600; // journey text appears where the logo was
   const ROUTE_AT   = JOURNEY_AT + 1400;           // route + landmarks
   const ROUTE_DRAW = 4200; // line drawing time, left to right
@@ -206,7 +204,7 @@
     stage.classList.add('lit');
     timers.push(setTimeout(() => stage.classList.add('glow'), GLOW_AT));
     timers.push(setTimeout(() => stage.classList.add('clear'), CLEAR_AT));
-    timers.push(setTimeout(() => stage.classList.add('fade'), HOLD_LIT));
+    timers.push(setTimeout(() => stage.classList.add('fade'), CLEAR_AT));
     timers.push(setTimeout(() => stage.classList.add('journey'), JOURNEY_AT));
     timers.push(setTimeout(() => { stage.classList.add('route'); drawRoute(true); }, ROUTE_AT));
   }
