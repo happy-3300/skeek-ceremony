@@ -9,6 +9,7 @@
 <title>Skeek Al Doha</title>
 <link rel="preload" as="image" href="assets/background.png">
 <link rel="preload" as="image" href="assets/button-on.png">
+<link rel="preload" as="image" href="assets/lines-lit.png">
 <style>
   /* Artboard from the PDF: 2064 x 2752 pt. All positions below are in % of it. */
   html, body {
@@ -63,12 +64,38 @@
   .button:active .off { transform: scale(.985); }
   .stage.lit .button { pointer-events: none; }
 
+  /* ---- building lines light up, bottom to top ----
+     The wrapper slides up while the image inside slides down by the same amount,
+     so the image stays put and is revealed from the bottom. Transform-only = GPU smooth.
+     Wrapper is 115% tall; its top 15% is a soft feathered edge. */
+  .lights {
+    position: absolute; left: 0; top: -15%; width: 100%; height: 115%;
+    overflow: hidden; pointer-events: none;
+    transform: translate3d(0, 100%, 0);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 13%);
+            mask-image: linear-gradient(to bottom, transparent 0%, #000 13%);
+  }
+  .lights img {
+    left: 0; top: 13.0435%; width: 100%; height: 86.9565%; /* = the stage */
+    transform: translate3d(0, -115%, 0);
+  }
+  .lights, .lights img { transition: transform 3.4s cubic-bezier(.4, 0, .2, 1); will-change: transform; }
+  .stage.glow .lights, .stage.glow .lights img { transform: translate3d(0, 0, 0); }
+
+  /* after the sweep, the lights gently breathe */
+  .lights-inner { position: absolute; inset: 0; }
+  .stage.breathe .lights-inner { animation: breathe 4s ease-in-out infinite; }
+  @keyframes breathe { 0%, 100% { opacity: 1; } 50% { opacity: .72; } }
+
+  .stage.instant, .stage.instant * { transition: none !important; animation: none !important; }
+
   /* hidden reset: double-tap top-left corner */
   .reset { position: absolute; left: 0; top: 0; width: 12%; height: 9%; z-index: 5; }
 </style>
 </head>
 <body>
   <div class="stage" id="stage">
+    <div class="lights-inner"><div class="lights"><img src="assets/lines-lit.png" alt=""></div></div>
     <img class="logo" src="assets/logo.png" alt="Skeek Al Doha">
     <div class="button" id="btn" role="button" aria-label="Turn on">
       <img class="off" src="assets/button-off.png" alt="">
@@ -84,6 +111,8 @@
   const HOLD_LIT   = 1600; // button stays lit before fading
   const FADE_OUT   = 2400; // button + text fade (matches CSS)
   const GAP        = 200;  // pause before the new text
+  const GLOW_AT    = 350;  // building lines start lighting up
+  const SWEEP      = 3400; // bottom-to-top sweep (matches CSS)
 
   const stage = document.getElementById('stage');
   const btn = document.getElementById('btn');
@@ -95,15 +124,23 @@
     if (started) return;
     started = true;
     stage.classList.add('lit');
+    timers.push(setTimeout(() => stage.classList.add('glow'), GLOW_AT));
+    timers.push(setTimeout(() => stage.classList.add('breathe'), GLOW_AT + SWEEP));
     timers.push(setTimeout(() => stage.classList.add('fade'), HOLD_LIT));
     timers.push(setTimeout(() => stage.classList.add('journey'), HOLD_LIT + FADE_OUT + GAP));
   }
 
   function reset() {
     timers.forEach(clearTimeout); timers = [];
-    stage.classList.remove('lit', 'fade', 'journey');
+    stage.classList.add('instant');
+    stage.classList.remove('lit', 'fade', 'journey', 'glow', 'breathe');
+    void stage.offsetWidth; // apply instantly, then re-enable transitions
+    stage.classList.remove('instant');
     started = false;
   }
+
+  // decode every image up front so the first frame of each animation is smooth
+  document.querySelectorAll('img').forEach(img => img.decode && img.decode().catch(() => {}));
 
   btn.addEventListener('pointerdown', start);
 
