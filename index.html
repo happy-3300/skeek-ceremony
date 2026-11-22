@@ -79,7 +79,7 @@
     left: 0; top: 13.0435%; width: 100%; height: 86.9565%; /* = the stage */
     transform: translate3d(0, -115%, 0);
   }
-  .lights, .lights img { transition: transform 3.4s cubic-bezier(.4, 0, .2, 1); will-change: transform; }
+  .lights, .lights img { transition: transform 5s cubic-bezier(.42, 0, 1, 1); will-change: transform; }
   .stage.glow .lights, .stage.glow .lights img { transform: translate3d(0, 0, 0); }
 
   /* after the sweep, the lights gently breathe */
@@ -111,8 +111,8 @@
   const HOLD_LIT   = 1600; // button stays lit before fading
   const FADE_OUT   = 2400; // button + text fade (matches CSS)
   const GAP        = 200;  // pause before the new text
-  const GLOW_AT    = 350;  // building lines start lighting up
-  const SWEEP      = 3400; // bottom-to-top sweep (matches CSS)
+  const GLOW_AT    = 0;    // building lines start lighting up (on tap)
+  const SWEEP      = 5000; // bottom-to-top sweep (matches CSS)
 
   const stage = document.getElementById('stage');
   const btn = document.getElementById('btn');
