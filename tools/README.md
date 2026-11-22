@@ -15,3 +15,11 @@ Each landmark SVG is split into sun / building / shadow PNGs (shadows converted 
     node tools/chrome-run.js file:///tmp/icons.html /tmp/ic
     for f in /tmp/ic/*.png; do pngquant --quality=88-100 --speed 1 --strip --force --output assets/icons/$(basename "$f") "$f"; done
     node build.js
+
+# Regenerating assets/ribbons.png + assets/lines.png
+
+The background is split so the building lines can fade out while the ribbons stay.
+
+    node tools/split-background-page.js assets-3x/background.png /tmp/split.html
+    node tools/chrome-run.js file:///tmp/split.html /tmp/split
+    for f in ribbons lines; do pngquant --quality=88-100 --speed 1 --strip --force --output assets/$f.png /tmp/split/$f.png; done

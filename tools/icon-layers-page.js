@@ -15,11 +15,16 @@ for(const {n,svg} of items){
   if(kind!="sun")sun.forEach(e=>e.remove());
   if(kind!="shadow")sh.forEach(e=>e.remove());
   if(kind!="building")bd.forEach(e=>e.remove());
-  if(kind=="shadow"){const r=doc.createElementNS("http://www.w3.org/2000/svg","rect");r.setAttribute("x",VB[0]-10);r.setAttribute("y",VB[1]-10);r.setAttribute("width",VB[2]+20);r.setAttribute("height",VB[3]+20);r.setAttribute("fill","#fff");L.insertBefore(r,L.firstChild)}
+  if(kind=="shadow"){const r=doc.createElementNS("http://www.w3.org/2000/svg","rect");r.setAttribute("x",VB[0]-10);r.setAttribute("y",VB[1]-10);r.setAttribute("width",VB[2]+20);r.setAttribute("height",VB[3]+20);r.setAttribute("fill","#faf3e9");L.insertBefore(r,L.firstChild)}
   const c=await render(root);
   if(kind=="shadow"){const x=c.getContext("2d"),d=x.getImageData(0,0,c.width,c.height),p=d.data;let edge=0;
-   for(let i=0;i<p.length;i+=4){const m=Math.min(p[i],p[i+1],p[i+2]);const a=1-m/255;
-    if(a<0.004){p[i+3]=0;continue}for(let k=0;k<3;k++)p[i+k]=Math.max(0,Math.min(255,(p[i+k]-(1-a)*255)/a));p[i+3]=Math.round(a*255)}
+   // shadow was multiplied onto the cream page colour; turn it into a layer that only darkens cream the same way
+   const CR=[250,243,233];const W0=c.width;
+   for(let i=0;i<p.length;i+=4){let a=0;for(let k=0;k<3;k++)a=Math.max(a,(CR[k]-p[i+k])/CR[k]);
+    // soft elliptical fade towards the layer edges (centre ~ icon middle, units of the icon artboard)
+    const px=(i/4)%W0,py=((i/4)/W0)|0;const u=VB[0]+px/K,v=VB[1]+py/K;const e=Math.hypot((u-286)/430,(v-300)/270);
+    const fall=e<0.72?1:e>1?0:(1-(e-0.72)/0.28)**2;a*=fall;
+    if(a<0.004){p[i+3]=0;continue}const a0=a/fall;for(let k=0;k<3;k++)p[i+k]=Math.max(0,Math.min(255,CR[k]-(CR[k]-p[i+k])/a0));p[i+3]=Math.round(a*255)}
    x.putImageData(d,0,0);
    // max alpha along the canvas border (should be ~0 if shadows fade out)
    const W=c.width,H=c.height;for(let X=0;X<W;X++)for(const Y of [0,H-1])edge=Math.max(edge,p[(Y*W+X)*4+3]);for(let Y=0;Y<H;Y++)for(const X of [0,W-1])edge=Math.max(edge,p[(Y*W+X)*4+3]);
